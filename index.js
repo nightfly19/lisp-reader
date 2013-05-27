@@ -53,7 +53,6 @@ var searchForToken = function (token_rule,input_string){
         }
         eof = (tail.length == 0);
     };
-    console.log(eof);
     if(stopped_matching){
         return {token:last_match[1], tail:last_tail}
     }
@@ -64,6 +63,8 @@ var searchForToken = function (token_rule,input_string){
         return null;
     }
 };
+
+addReaderMacro('eof', /^$/, function(input_string){return null});
 
 addReaderMacro('whitespace', /^[\s,]/, function(){
     var whitespace_rule = /^[\s,]+$/;
@@ -129,3 +130,4 @@ console.log(readFromString('1234.123123 sdfsf'));
 console.log(readFromString('1234.123.123 sdfsf'));
 console.log(readFromString('helloworld'));
 console.log(readFromString('    ,"hello"'));
+console.log(readFromString('"hello'));
