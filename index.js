@@ -105,7 +105,7 @@ addReaderMacro('symbol', /^\S/, function(){
     var symbol_rule = /^(\S+)$/;
     return function(input_string){
         var token = searchForToken(symbol_rule, input_string);
-        return token;
+        return token ? {value: symbol(token.token), tail: token.tail} : null;
     };
 }());
 
@@ -116,7 +116,7 @@ addReaderMacro('symbol', /^\S/, function(){
 //object: function().
 //array: function()
 
-var readFromString = reader.readFromString = function(input_string){
+var innerReadFromString = reader.innerReadFromString = function(input_string){
     for (var i in reader_macros){
         var reader_macro = reader_macros[i];
         if (reader_macro.rule.test(input_string)){
@@ -125,9 +125,21 @@ var readFromString = reader.readFromString = function(input_string){
     };
 };
 
+var readFromString = reader.readFromString = function(input_string){
+    var result = innerReadFromString(input_string);
+    if (result){
+        return {value: result.value};
+    }
+    else{
+        return {value: undefined,
+                tail: input_string,
+                eof: true};
+    }
+};
+
 console.log(readFromString('"hello" there'));
 console.log(readFromString('1234.123123 sdfsf'));
 console.log(readFromString('1234.123.123 sdfsf'));
-console.log(readFromString('helloworld'));
+console.log(innerReadFromString('helloworld   '));
 console.log(readFromString('    ,"hello"'));
 console.log(readFromString('"hello'));
