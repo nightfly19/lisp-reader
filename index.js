@@ -1,37 +1,4 @@
-//Should become it's own module
-var tokenHunter = function (token_rule,input_string){
-    var search = '',
-    tail = input_string,
-    last_tail = '',
-    match,
-    last_match,
-    began_matching = false,
-    stopped_matching = false,
-    eof = false;
-    while (!stopped_matching && tail.length > 0){
-        search = search + tail[0];
-        last_tail = tail;
-        tail = tail.substring(1);
-        last_match = match;
-        match = token_rule.exec(search);
-        if(!began_matching && match){
-            began_matching = true
-        }
-        if(began_matching && !match){
-            stopped_matching = true
-        }
-        eof = (tail.length == 0);
-    };
-    if(stopped_matching){
-        return {token:last_match[1], tail:last_tail}
-    }
-    else if (eof && began_matching){
-        return {token:match[1], tail:tail}
-    }
-    else{
-        return null;
-    }
-};
+var tokenHunter = require("tokenhunter");
 
 module.exports = function(){};
 
@@ -104,7 +71,6 @@ Reader.prototype.addReaderMacro('closing_paren', /^\)/, function(reader){
 });
 
 Reader.prototype.addReaderMacro('opening_paren', /^\(/, function(reader){
-    //    console.log(reader);
     var closing_paren = new reader.Symbol(')');
     return function(input_string, reader){
         var tail = input_string.substring(1);
@@ -130,15 +96,21 @@ Reader.prototype.addReaderMacro('number', /^[0-9]/, function(){
     var symbol_rule = /^([0-9]+\.?[0-9]*)$/;
     return function(input_string){
         var token = tokenHunter(symbol_rule, input_string);
-        return token ? {value: Number(token.token), tail: token.tail} : {tail: input_string, error: "eof"};
+        return !token.err ? {value: Number(token.token), tail: token.tail} : {tail: input_string, error: "eof"};
     };
 });
 
 Reader.prototype.addReaderMacro('string', /^\"/, function(){
-    var string_rule = /^"((?:(?:[^"])|(?:\\"))*)"$/;
+    var string_rule = /^"(?:(?:[^"])|(?:\\"))*"$/;
     return function(input_string){
         var token = tokenHunter(string_rule, input_string);
-        return token ? {value: token.token, tail: token.tail} : {tail: input_string, error: "eof"};
+        if (token.err){
+            return {tail: input_string, error: "eof"};
+        }
+        else{
+            var temp = token.token.substring(1,token.token.length - 1);
+            return {value: temp, tail: token.tail};
+        }
     };
 });
 
@@ -146,7 +118,7 @@ Reader.prototype.addReaderMacro('symbol', /^[^\s\(\)\'\#\[\]\{\}]/, function(rea
     var symbol_rule = /^([^\s\(\)\'\#\[\]\{\}]+)$/;
     return function(input_string){
         var token = tokenHunter(symbol_rule, input_string);
-        return token ? {value: new reader.Symbol(token.token), tail: token.tail} : {tail: input_string, error: "eof"};
+        return !token.err ? {value: new reader.Symbol(token.token), tail: token.tail} : {tail: input_string, error: "eof"};
     };
 });
 
@@ -157,16 +129,5 @@ Reader.prototype.readFromString = function(input_string){
             return reader_macro.callback(input_string, this);
         }
     };
-    return {tail:input_string, error:'illegal-input'};
+    return {tail:input_string, error:'illegal_input'};
 };
-
-var aReader = new Reader();
-//console.log(aReader.readFromString);
-//console.log(aReader.readFromString('"hello" there'));
-console.log(aReader.readFromString('1234.123123 sdfsf'));
-console.log(aReader.readFromString('1234.123.123 sdfsf'));
-console.log(aReader.readFromString('helloworld)   '));
-console.log(aReader.readFromString('    ,"hello"'));
-console.log(aReader.readFromString('(1 2 3 4 5) more'));
-console.log(aReader.readFromString('(1 2 3 4 5 more'));
-console.log(aReader.readFromString('(1 2 3 4 5 this)something'));
