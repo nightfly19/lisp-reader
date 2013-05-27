@@ -4,22 +4,16 @@ A Lisp reader that was designed to be extended with reader macros.
 
 ## Included Reader Macros
 
-* *Lists*
+### Lists
 Reads a list of valid s-expressions contained within '(' and ')' tokens.
 Current behavior is to read lists in as arrays.
 
-Dispatched by the /^(/ pattern. 
-Reads valid s-expressions until the symbol ')' is read (')' is read in in it's own reader macro). 
-
-* *Number*
+### Numbers
 Reads a JavaScript style number.
 
-Dispatched by the /^[0-9] pattern. 
-Reads in a number matching /^([0-9]+\.?[0-9]*)$/ and calls Number on the token.
-
-* *String*
-Reads a string '"' enclosed string
+### Strings
+Reads a string '"' enclosed string.
 No escape sequences are currently supported.
 
-Dispatched by the /^\"/ pattern. 
-Reads in a token matching /^"(?:(?:[^"])|(?:\\"))*"$/ and extracted everthing except the first and last character
+### Symbols
+Reads in (most) valid identitiers (and probably lots of invalid ones) and creates a Symbol object from them.
