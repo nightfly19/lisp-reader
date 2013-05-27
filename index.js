@@ -51,10 +51,14 @@ var searchForToken = function (token_rule,input_string){
         if(began_matching && !match){
             stopped_matching = true
         }
-        eof = (tail.legth == 0);
+        eof = (tail.length == 0);
     };
+    console.log(eof);
     if(stopped_matching){
         return {token:last_match[1], tail:last_tail}
+    }
+    else if (eof && began_matching){
+        return {token:match[1], tail:tail}
     }
     else{
         return null;
@@ -88,6 +92,14 @@ addReaderMacro('string', /^\"/, function(){
     };
 }());
 
+addReaderMacro('symbol', /^\S/, function(){
+    var symbol_rule = /^(\S+)$/;
+    return function(input_string){
+        var token = searchForToken(symbol_rule, input_string);
+        return token;
+    };
+}());
+
 //list: function(){},
 //number: function(){},
 //quote: function(){}
@@ -107,3 +119,4 @@ var readFromString = reader.readFromString = function(input_string){
 console.log(readFromString('"hello" there'));
 console.log(readFromString('1234.123123 sdfsf'));
 console.log(readFromString('1234.123.123 sdfsf'));
+console.log(readFromString('helloworld'));
