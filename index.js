@@ -65,6 +65,14 @@ var searchForToken = function (token_rule,input_string){
     }
 };
 
+addReaderMacro('whitespace', /^[\s,]/, function(){
+    var whitespace_rule = /^[\s,]+$/;
+    return function(input_string){
+        var token = searchForToken(whitespace_rule, input_string);
+        return readFromString(token.tail);
+    };
+}());
+
 addReaderMacro('closing_paren', /^\)/, function(input_string){
     return {value: symbol(')'), tail:input_string.substring(1)}
 });
@@ -120,3 +128,4 @@ console.log(readFromString('"hello" there'));
 console.log(readFromString('1234.123123 sdfsf'));
 console.log(readFromString('1234.123.123 sdfsf'));
 console.log(readFromString('helloworld'));
+console.log(readFromString('    ,"hello"'));
