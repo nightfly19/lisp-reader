@@ -4,17 +4,15 @@ var Symbol = reader.Symbol = function(name){
     this.name = name;
 };
 
-var symbol = reader.symbol = function(name){
-    return new reader.Symbol(name);
-};
-
 var symbolEquals = reader.symbolEquals = function(a, b){
     return typeof a == 'object' &&
         typeof b == 'object' &&
+        a instanceof reader.Symbol &&
+        b instanceof reader.Symbol &&
         a.name == b.name;
 };
 
-var reader_macros = reader.reader_macros = []
+var reader_macros = reader.reader_macros = [];
 
 var addReaderMacro = reader.addReaderMacro = function(name, rule, callback){
     var new_reader_macro = {name: name,
@@ -30,10 +28,10 @@ var updateReaderMacro = reader.updateReaderMacro = function(name, rule, callback
         if( reader_macro.name = name){
             reader_macro.rule = rule;
             reader_macro.callback = callback;
-            return reader_macro;
+            return reader;
         }
     };
-    addReaderMacro(name, rule, callback);
+    return addReaderMacro(name, rule, callback);
 };
 
 var searchForToken = function (token_rule,input_string){
@@ -79,7 +77,9 @@ var listCons = reader.listCons = function(list, element){
     return list;
 };
 
-addReaderMacro('eof', /^$/, function(input_string){return null});
+addReaderMacro('eof', /^$/, function(input_string){
+    return {tail:input_string, error: 'eof'}
+});
 
 addReaderMacro('whitespace', /^[\s,]/, function(){
     var whitespace_rule = /^[\s,]+$/;
@@ -90,19 +90,20 @@ addReaderMacro('whitespace', /^[\s,]/, function(){
 }());
 
 addReaderMacro('closing_paren', /^\)/, function(input_string){
-    return {value: symbol(')'), tail:input_string.substring(1)}
+    return {value: new Symbol(')'), tail:input_string.substring(1)}
 });
 
 addReaderMacro('opening_paren', /^\(/, function(){
-    var closing_paren = symbol(')');
+    var closing_paren = new Symbol(')');
     return function(input_string){
         var tail = input_string.substring(1);
         var element = {};
         var value = reader.emptyList();
         var eof = false;
         var done = false;
-        while(!element.eof && !done){
+        while(!element.error && !done){
             element = readFromString(tail);
+            //console.log(element);
             tail = element.tail;
             if(symbolEquals(element.value, closing_paren)){
                 done = true;
@@ -111,7 +112,7 @@ addReaderMacro('opening_paren', /^\(/, function(){
                 value = reader.listCons(value, element.value);
             }
         }
-        return {value: value, tail: tail};
+        return done ? {value: value, tail: tail} : {tail: input_string, error: "eof"};
     };
 }());
 
@@ -119,7 +120,7 @@ addReaderMacro('number', /^[0-9]/, function(){
     var symbol_rule = /^([0-9]+\.?[0-9]*)$/;
     return function(input_string){
         var token = searchForToken(symbol_rule, input_string);
-        return token ? {value: Number(token.token), tail: token.tail} : null;
+        return token ? {value: Number(token.token), tail: token.tail} : {tail: input_string, error: "eof"};
     };
 }());
 
@@ -127,49 +128,33 @@ addReaderMacro('string', /^\"/, function(){
     var string_rule = /^"((?:(?:[^"])|(?:\\"))*)"$/;
     return function(input_string){
         var token = searchForToken(string_rule, input_string);
-        return token ? {value: token.token, tail: token.tail} : null;
+        return token ? {value: token.token, tail: token.tail} : {tail: input_string, error: "eof"};
     };
 }());
 
-addReaderMacro('symbol', /^\S/, function(){
-    var symbol_rule = /^([^\s\)]+)$/;
+addReaderMacro('symbol', /^[^\s\(\)\'\#\[\]\{\}]/, function(){
+    var symbol_rule = /^([^\s\(\)\'\#\[\]\{\}]+)$/;
     return function(input_string){
         var token = searchForToken(symbol_rule, input_string);
-        return token ? {value: symbol(token.token), tail: token.tail} : null;
+        return token ? {value: new Symbol(token.token), tail: token.tail} : {tail: input_string, error: "eof"};
     };
 }());
 
-//list: function(){},
-//number: function(){},
-//quote: function(){}
-//backquote: function(){},
-//object: function().
-//array: function()
-
-var innerReadFromString = reader.innerReadFromString = function(input_string){
+var readFromString = reader.innerReadFromString = function(input_string){
     for (var i in reader_macros){
         var reader_macro = reader_macros[i];
         if (reader_macro.rule.test(input_string)){
             return reader_macro.callback(input_string);
         }
     };
+    return {tail:input_string, error:'illegal-input'};
 };
 
-var readFromString = reader.readFromString = function(input_string){
-    var result = innerReadFromString(input_string);
-    if (result){
-        return result;
-    }
-    else{
-        return {value: undefined,
-                tail: input_string,
-                eof: true};
-    }
-};
-
-//console.log(readFromString('"hello" there'));
-//console.log(readFromString('1234.123123 sdfsf'));
-//console.log(readFromString('1234.123.123 sdfsf'));
-//console.log(innerReadFromString('helloworld)   '));
-//console.log(readFromString('    ,"hello"'));
-console.log(readFromString('(1 2 3 4 5)more'));
+console.log(readFromString('"hello" there'));
+console.log(readFromString('1234.123123 sdfsf'));
+console.log(readFromString('1234.123.123 sdfsf'));
+console.log(readFromString('helloworld)   '));
+console.log(readFromString('    ,"hello"'));
+console.log(readFromString('(1 2 3 4 5) more'));
+console.log(readFromString('(1 2 3 4 5 more'));
+console.log(readFromString('(1 2 3 4 5 this)something'));
