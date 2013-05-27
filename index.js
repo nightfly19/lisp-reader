@@ -8,6 +8,12 @@ var symbol = reader.symbol = function(name){
     return new reader.Symbol(name);
 };
 
+var symbolEquals = reader.symbolEquals = function(a, b){
+    return typeof a == 'object' &&
+        typeof b == 'object' &&
+        a.name == b.name;
+};
+
 var reader_macros = reader.reader_macros = []
 
 var addReaderMacro = reader.addReaderMacro = function(name, rule, callback){
@@ -64,6 +70,15 @@ var searchForToken = function (token_rule,input_string){
     }
 };
 
+var emptyList = reader.emptyList = function(){
+    return [];
+};
+
+var listCons = reader.listCons = function(list, element){
+    list.push(element);
+    return list;
+};
+
 addReaderMacro('eof', /^$/, function(input_string){return null});
 
 addReaderMacro('whitespace', /^[\s,]/, function(){
@@ -79,9 +94,24 @@ addReaderMacro('closing_paren', /^\)/, function(input_string){
 });
 
 addReaderMacro('opening_paren', /^\(/, function(){
+    var closing_paren = symbol(')');
     return function(input_string){
         var tail = input_string.substring(1);
-        return {value: "list here", tail: tail};
+        var element = {};
+        var value = reader.emptyList();
+        var eof = false;
+        var done = false;
+        while(!element.eof && !done){
+            element = readFromString(tail);
+            tail = element.tail;
+            if(symbolEquals(element.value, closing_paren)){
+                done = true;
+            }
+            else{
+                value = reader.listCons(value, element.value);
+            }
+        }
+        return {value: value, tail: tail};
     };
 }());
 
@@ -102,7 +132,7 @@ addReaderMacro('string', /^\"/, function(){
 }());
 
 addReaderMacro('symbol', /^\S/, function(){
-    var symbol_rule = /^(\S+)$/;
+    var symbol_rule = /^([^\s\)]+)$/;
     return function(input_string){
         var token = searchForToken(symbol_rule, input_string);
         return token ? {value: symbol(token.token), tail: token.tail} : null;
@@ -128,7 +158,7 @@ var innerReadFromString = reader.innerReadFromString = function(input_string){
 var readFromString = reader.readFromString = function(input_string){
     var result = innerReadFromString(input_string);
     if (result){
-        return {value: result.value};
+        return result;
     }
     else{
         return {value: undefined,
@@ -137,9 +167,9 @@ var readFromString = reader.readFromString = function(input_string){
     }
 };
 
-console.log(readFromString('"hello" there'));
-console.log(readFromString('1234.123123 sdfsf'));
-console.log(readFromString('1234.123.123 sdfsf'));
-console.log(innerReadFromString('helloworld   '));
-console.log(readFromString('    ,"hello"'));
-console.log(readFromString('"hello'));
+//console.log(readFromString('"hello" there'));
+//console.log(readFromString('1234.123123 sdfsf'));
+//console.log(readFromString('1234.123.123 sdfsf'));
+//console.log(innerReadFromString('helloworld)   '));
+//console.log(readFromString('    ,"hello"'));
+console.log(readFromString('(1 2 3 4 5)more'));
