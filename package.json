@@ -1,0 +1,23 @@
+{
+  "name": "lisp-reader",
+  "version": "0.0.0",
+  "description": "Extendable Lisp reader for JavaScript",
+  "main": "index.js",
+  "dependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/nightfly19/lisp-reader.git"
+  },
+  "keywords": [
+    "Lisp",
+    "reader"
+  ],
+  "author": "Sage Imel",
+  "license": "BSD",
+  "bugs": {
+    "url": "https://github.com/nightfly19/lisp-reader/issues"
+  }
+}
